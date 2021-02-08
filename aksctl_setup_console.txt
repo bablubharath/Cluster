@@ -1,0 +1,26 @@
+    1  Create a linux machin and assign Iam role with adminstrator access 
+    2  curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+    3  unzip awscli-bundle.zip
+    4  yum install unzip -y
+    5  unzip awscli-bundle.zip
+    6  sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+    7  aws
+    8  yum update -y
+    9  curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+   10  sudo mv /tmp/eksctl /usr/local/bin
+   11  eksctl version
+   12  curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
+   13  chmod +x ./kubectl
+   14  mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
+   15  kubectl version --short --client
+   16  eksctl create cluster --name bharath --version 1.14 --region us-east-1 --nodegroup-name standard-workers --node-type t2.medium --nodes 3 --nodes-min 1 --nodes-max 4 --node-ami auto
+   17  kubectl get svc
+   18  kubectl get nodes
+   19  kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/1.0.0-beta/nvidia-device-plugin.yml
+   20  kubectl apply -f https://raw.githubusercontent.com/kubernetes/examples/master/guestbook-go/redis-master-controller.json
+   21  kubectl apply -f https://raw.githubusercontent.com/kubernetes/examples/master/guestbook-go/redis-master-service.json
+   22  kubectl apply -f https://raw.githubusercontent.com/kubernetes/examples/master/guestbook-go/redis-slave-controller.json
+   23  kubectl apply -f https://raw.githubusercontent.com/kubernetes/examples/master/guestbook-go/redis-slave-service.json
+   24  kubectl apply -f https://raw.githubusercontent.com/kubernetes/examples/master/guestbook-go/guestbook-controller.json
+   25  kubectl apply -f https://raw.githubusercontent.com/kubernetes/examples/master/guestbook-go/guestbook-service.json
+   26  kubectl get services -o wide

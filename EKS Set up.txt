@@ -1,0 +1,228 @@
+===================https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html==================
+step 1 :-
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+
+sudo mv /tmp/eksctl /usr/local/bin8
+
+eksctl version
+
+curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
+
+chmod +x ./kubectl
+
+mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
+
+echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+
+kubectl version --short --client
+==========================================================================
+
+======Installing aws-iam-authenticator======
+Step:-2
+
+curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/aws-iam-authenticator
+
+chmod +x ./aws-iam-authenticator
+
+mkdir -p $HOME/bin && cp ./aws-iam-authenticator $HOME/bin/aws-iam-authenticator && export PATH=$HOME/bin:$PATH
+
+echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+
+aws-iam-authenticator help
+
+aws eks --region us-east-1 update-kubeconfig --name preprod
+
+cd .kube/
+
+
+step 3:-
+
+
+eksctl create cluster \
+--name devops \
+--version 1.14 \
+--region us-east-1 \
+--nodegroup-name standard-workers \
+--node-type t3.medium \
+--nodes 2 \
+--nodes-min 1 \
+--nodes-max 2 \
+--node-ami auto
+
+step 4 :-
+aws eks --region us-east-1 update-kubeconfig --name devops
+
+========================================================================
+
+
+
+
+
+
+kubectl apply -f https://raw.githubusercontent.com/cornellanthony/nlb-nginxIngress-eks/master/apple.yaml 
+
+
+
+kubectl apply -f https://raw.githubusercontent.com/cornellanthony/nlb-nginxIngress-eks/master/banana.yaml
+
+
+
+Ingress controller
+
+Loadbalancer 
+CLB--http/https/tcp
+ALB --http/https
+NLB ---tcp--socket to socket (port to port)
+
+apple:Pods------>service---->alb
+banana:
+
+kubectl apply -f 
+
+https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
+
+
+
+Request---Route53---NLB-----SVC---Ingress(ha proxy/reverse proxy)-----ns=ingress
+
+service discovery
+
+
+gangi: ingress----svc-----pods--banana
+      
+
+ Warning  CreatingLoadBalancerFailed  71s (x6 over 3m49s)  
+service-controller  Error creating load balancer (will retry): 
+failed to ensure load balancer for service ingress-nginx/ingress-nginx: 
+Multiple tagged security groups found for instance i-0f32743c69a873f14; 
+ensure only the k8s security group is tagged; the tagged groups were sg-08904c744288cd092
+(eks-cluster-sg-preprod-318354310) 
+sg-0d342018430a933ab(eksctl-preprod-nodegroup-standard-workers-SG-12AD3YTVGA4TN)
+
+
+
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout \
+tls.key -out tls.crt -subj "/CN=www.feroz.site/O=www.feroz.site
+
+
+
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: example-ingress
+  namespace: gangi
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - www.feroz.site
+    secretName: tls-secret
+  rules:
+  - host:www.feroz.site
+    http:
+      paths:
+        - path: /apple
+          backend:
+            serviceName: apple-service
+            servicePort: 5678
+        - path: /banana
+          backend:
+            serviceName: banana-service
+            servicePort: 5678
+
+
+
+
+www.feroz.site----->NLB--->Ingress controller(nginx pod)---->nginx.conf(rules path/host)---->
+Namespace---->Ingress--->service--pod
+
+
+namespace: ingress-nginx
+pod: nginx ( nginx.conf)rules
+Service: nlb --------------------------routet53
+
+
+www.guestbook.com
+
+
+Frontend
+
+Deployment(pods)----------SVC(ClusterIP)----ingress--------namespacce
+
+
+
+
+
+
+
+
+https://raw.githubusercontent.com/cornellanthony/nlb-nginxIngress-eks/master/apple.yaml 
+
+
+$ kubectl apply -f https://raw.githubusercontent.com/cornellanthony/nlb-nginxIngress-eks/master/banana.yaml
+
+
+
+`xx
+ns-1839.awsdns-37.co.uk. 
+ns-1045.awsdns-02.org. 
+ns-559.awsdns-05.net.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
