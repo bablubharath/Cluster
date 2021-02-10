@@ -1,0 +1,38 @@
+apiVersion: v1
+data:
+  mapRoles: |
+    - groups:
+      - system:bootstrappers
+      - system:nodes
+      rolearn: arn:aws:iam::291820600445:role/eksctl-eks-sunil-nodegroup-standa-NodeInstanceRole-1FA55IA3PJ1T7
+      username: system:node:{{EC2PrivateDNSName}}
+  mapUsers: |
+    - userarn: arn:aws:iam::291820600445:user/eks-user
+      username: eks-user
+      groups:
+      - system:masters
+    - userarn: arn:aws:iam::291820600445:user/sunil
+      username: sunil
+      groups:
+      - system:masters
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2021-02-10T07:37:02Z"
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:data:
+        .: {}
+        f:mapRoles: {}
+    manager: eksctl
+    operation: Update
+    time: "2021-02-10T07:37:02Z"
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:data:
+        f:mapUsers: {}
+    manager: kubectl
+    operation: Update
+"/tmp/kubectl-edit-8enbq.yaml" 47L, 1328C
