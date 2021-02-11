@@ -1,0 +1,257 @@
+In RHEL7:
+------------
+1. Enable k8.repo in /etc/yum.repos.d/ with
+[kubernetes]
+name=Kubernetes
+baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+2. Yum update -y
+3. setup docker,kubelet,kubectl,kubeadm and kubernetes-cni using 
+yum install -y docker kubelet kubeadm kubectl kubernetes-cni --nogpgcheck
+4. Enable repo for Docker using
+sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/redhat-rhui.repo
+5. yum install docker -y
+6. systemctl start docker && systemctl enable docker
+   systemctl start kubelet && systemctl enable kubelet 
+7. sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+8. sysctl -w net.bridge.bridge-nf-call-iptables=1
+echo "net.bridge.bridge-nf-call-iptables=1" > /etc/sysctl.d/k8s.conf
+9. take AMI
+10.Create two servers as worker1 and 2 with image (AMI).
+11.Reboot the master node once.
+12.In master run kubeadm init and note down the below commands.
+mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+kubeadm join 172.31.1.216:6443 --token 0ihbfi.dg1ws8vl2yy1qmq2 \
+    --discovery-token-ca-cert-hash sha256:55c1b4dc311be470227953c96467f002c5b7f17847f78d20064239f751ca4163
+run watch -x 'ls -ltr' in master to eliminate the session closing.
+13.Go to ec2 dash board and allow 6443 from any where.
+14. Connect to worker 1 and worker 2 and run the join the command from step 12.
+15. Create a CI server with minimum of 4gb ram, rhel7 and setup kubectl by enabling k8.repo as we did in step 1.
+vi /etc/yum.repos.d/k8.repo
+[kubernetes]
+name=Kubernetes
+baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+16. Run yum repolist -y
+17. yum install -y kubectl --nogpgcheck
+18. Now we required config file under .kube folder. So copy the file from Master which is under $HOME/.kube/config by creating the directory .kube under home dir of root.
+19. Now create the CNI network in CI server using 
+kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+It will give the below output --->
+serviceaccount/weave-net created
+clusterrole.rbac.authorization.k8s.io/weave-net created
+clusterrolebinding.rbac.authorization.k8s.io/weave-net created
+role.rbac.authorization.k8s.io/weave-net created
+rolebinding.rbac.authorization.k8s.io/weave-net created
+daemonset.apps/weave-net created
+20. Try to create a name space From CI server using yaml file.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apache
+check kubectl get ns
+21. Try to create deploy as a deployment object using yaml file.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webnginx
+  namespace: apache
+spec:
+  
+selector:
+    match
+Labels:
+      app: nginx
+  replicas: 1
+  template:
+ 
+   metadata:
+      labels:
+ 
+       app: nginx
+    spec:
+      containers:
+ 
+     - name: nginx
+ 
+       image: nginx:1.7.9
+  
+      ports:
+ 
+       - containerPort: 80
+check kubectl get pods -n apache
+If any issues here check using "kubectl describe po podname -n apache"
+22. If you want to access your create pods out side then you have to create a service with node port type.
+For this you have to write a yaml file for the above nginx image.
+apiVersion: v1
+kind: Service
+metadata:
+ name: my-nginx
+ namespace: apache
+ labels:
+   run: my-nginx
+spec:
+ 
+ports:
+ 
+- port: 80
+   protocol: TCP
+ selector:
+   app: nginx
+ type: NodePort
+Then it will create the sevice with some node port value. you can access your pod with any workers ip:nodeport.
+23. Jenkins set up in CI server:
+--------------------------------
+---> Pre req Install Java
+yum install java -y
+--> enable repo for Jenkins
+yum install wget -y
+wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
+rpm --import http://pkg.jenkins.io/redhat-stable/jenkins.io.key
+---> yum install jenkins -y
+---> systemctl start jenkins 
+---> allow 8080 in ci-server sg.
+---> Go to jenkins home dir /var/lib/jenkins.There is a folder called secrets,in that you will have initial.... file,do cat filename and copy it.
+---> Go to browser and use ciserverip:8080 
+---> Paste the copied content from initial.... file here.
+---> Create with ur credentials as a admin user and install the plugins.
+---> Here Jenkins wants to run kubectl commands, so it requires config in .kube folder under /var/lib/jenkins with jenkins as owner and group for that.
+---> copy the config file from /root/.kube to here (/var/lib/jenkins/.kube)
+---> You can reset your jenkins user password using passwd jenkins command.
+---> Now create a job using new item ---> free style project --> ok --> build --> Build again --> execute shell --> run kubectl commands here and check the build status. 
+24. local-Github setup:
+-------------------------------
+--> Go to browser and signup to git hub with your mail id as a public account.
+--> Create a repo with out readme.md file.
+--> Download git from local and install in the local.
+--> Open git bash and locate into your home directory.
+--> Generate ssh key using ssh-keygen.exe with out enter any fileds just enter.
+--> Copy the id_rsa.pub file and then go to github account ---> settings --->Gcp and ssh --> create a ssh using xxx name and in the below box paste the id_rsa.pub which we copied.
+--> Go to your created repository --> there is some code will be displaying for you as below --> copy it and run in the local
+echo "# myrepo-devops" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git remote add origin git@github.com:giridharpathi/myrepo-devops.git
+git push -u origin master
+--> Now create two directories for devloper and operational team as
+mkdir dev
+&
+mkdir ops
+--> Open two git bash terminal, in one terminal go into the dev directory and in another terminal go into the ops dir.
+--> First in dev terminal:
+--------------------------
+--> run git init ---> it will give empty .git folder.
+--> git remote add origin "your git repo url" (ex:git@github.com:giridharpathi/myrepo-devops.git).
+--> Create index.html page with content as " <h1> This is my first line</h1>" .
+--> now run git add . then git commit -m "xxxx".
+--> Run git push origin master if any issues then run git pull --rebase origin master.(if any ssh issues run git remote rm origin and again git remote add origin git@github.com:giridharpathi/myrepo-devops.git)
+--> Then run again git push origin master.
+--> Check in the github repository and check whether files came or not.
+--> Second in ops terminal:
+--------------------------
+--> run git init ---> it will give empty .git folder.
+--> git remote add origin "your git repo url" (ex:git@github.com:giridharpathi/myrepo-devops.git).
+--> create dockerfile with content as 
+FROM nginx
+MAINTAINER xxxx
+COPY index.html /usr/share/nginx/html
+and save it.
+--> now run git add . then git commit -m "xxxx".
+--> Run git push origin master if any issues then run git pull --rebase origin master.(if any ssh issues run git remote rm origin and again git remote add origin git@github.com:giridharpathi/myrepo-devops.git)
+--> Then run again git push origin master.
+--> Check in the github repository and check whether files came or not.
+25. Github and CI-server(Jenkins) setup:
+----------------------------------------
+--> Login into the CI-server as a root user.
+--> yum install git -y
+--> Enable bash for jenkins user using vi /etc/passwd in the last line for jenkins replace false with bash.
+--> su - jenkins from root --> it will connect to jenkins bash --> ssh-keygen --> It will generate id_rsa.pub file.
+--> Copy the id_rsa.pub and go to the github --> settings --> gcp and ssh --> ssh --> add new ssh and paste the jenkins pub file.
+--> Go to  vi /etc/sudoers and in the last line add "jenkins   ALL=(ALL)       NOPASSWD: ALL".
+--> Now access jenkins page in the browser --> new item --> Free style project -- DEV-NGINX-BUILD --> OK --> source code management section --> again source code management --> select git --> paste gir repo url(git@github.com:giridharpathi/myrepo-devops.git) 
+--> Go to CI-server and check docker images --> it will show you the image apache.
+26. Build setup for Nginx in Jenkins: 
+-------------------------------------
+--> Go to git hub --> your repo --> settings --> webhook --> (Jenkins url)http://34.222.248.8:8080/github-webhook/ --> application/json --> Create or update.  
+--> Go to Jenkins browse page --> manage plugins --> avialable --> git hub integration, WebHook EventSource Plugin and Generic Webhook Trigger Plugin --> install with out restart.
+--> Enable repo for docker using "sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/redhat-rhui.repo".
+--> yum install docker -y
+--> systemctl start docker
+--> systemctl enable docker
+--> To disable TTY for docker use vi /etc/sudoers ---> change --> Defaults   requiretty --to--> Defaults  !requiretty.
+--> Login into the your docker hub from the browser and create a repo. And please note down your repo name.
+--> Now in the ci-server do this --> vi /etc/containers/registries.conf--> replace registries = ['registry.access.redhat.com', 'docker.io', 'registry.fedoraproject.org', 'quay.io', 'registry.centos.org'] with registries = ['registry.hub.docker.com'] 
+--> systemctl restart docker
+--> Now go to jenkins browser page --> our project (DEV-NGINX-BUILD) build section --> execute shell --> add these lines
+sudo docker build -t joysep91/ci-cd-nginx:4 .
+sudo docker login -u="joysep91" -p="xxxx"
+sudo docker push joysep91/ci-cd-nginx:4
+27. Deployement setup in Jenkins:
+----------------------------------
+--> Create yaml files in /opt/k8-labs as below.
+vi dev-nginx-ns.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+ 
+ name: nginx-docker
+vi dev-nginx-deploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webnginx
+  namespace: nginx-docker
+spec:
+  selector:
+    matchLabels:
+      app: nginx-docker
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx-docker
+    spec:
+      containers:
+      - name: nginx
+        image: joysep91/ci-cd-nginx:4 (it should match with your pushed image name in docker hub repo)
+        ports:
+        - containerPort: 80
+vi dev-nginx-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+ name: my-nginx-docker
+ namespace: nginx-docker
+ labels:
+   run: my-nginx
+spec:
+ ports:
+ - port: 80
+   protocol: TCP
+ selector:
+   app: nginx-docker
+ type: NodePort
+--> Go to Jenkins page --> new item --> free style project --> DEV-NGINX-DEPLOY --> BUILD --> ADD THESE BELOW LINES.
+cd /opt/k8-labs
+kubectl apply -f dev-nginx-ns.yaml
+kubectl apply -f dev-nginx-deploy.yaml
+kubectl apply -f dev-nginx-svc.yaml   --> apply and save
+--> Now go to DEV-NGINX-BUILD JOB --> configure --> scm --> Build Triggers --> select GitHub hook trigger for GITScm polling --> Post-build Actions --> select DEV-NGINX-DEPLOY job with out ',' --> apply and save. 
+--> Go to git and push some changes in index.html --> check in jenkins whether the job is running automatically or not.
+--> It's given success --> then go to ci server and check kubectl get svc -n nginx-docker --> it will give host port (above 30000).
+--> Take any one worker ip and go to browser --> search ip:hostport --> it will give index page.
+--> Next time only three changes. one is in DEV-NGINX-BUILD change the image tag name joysep91/ci-cd-nginx:? in two places and 
+second got DEV-NGINX-DEPLOY -- > remove kubectl apply for name space and service. apply and save.
+--> Third Now go to ci-server --> cd /opt/k8-labs --> vi dev-nginx-deploy.yaml file --> change the image name with new name.
+--> Then trigger push in git and check in the browser.
