@@ -31,6 +31,7 @@ echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
 aws-iam-authenticator help
 
 aws eks --region us-east-1 update-kubeconfig --name eks-bablu
+kubectl edit -n kube-system configmap/aws-auth --> to map the user
 
 cd .kube/
 
