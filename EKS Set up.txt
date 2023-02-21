@@ -50,6 +50,8 @@ eksctl create cluster \
 --nodes-max 2 \
 --node-ami auto
 
+eksctl create cluster --name dev --version 1.21 --region us-east-2 --nodegroup-name standard-workers --node-type t3.micro --nodes 1 --nodes-min 1 --nodes-max 1 --managed
+
 step 4 :-
 aws eks --region us-east-1 update-kubeconfig --name devops
 
